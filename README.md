@@ -13,6 +13,10 @@ python app.py
 
 Después abre `http://127.0.0.1:5000`.
 
+## Despliegue en Vercel
+
+El archivo `api/index.py` expone la aplicación Flask y `vercel.json` configura el runtime Python. En Vercel el estado en memoria sirve para la simulación, pero puede reiniciarse entre ejecuciones; para persistencia real se necesitará una base de datos o el API Gateway.
+
 ## Preparado para la API
 
 La integración mock está centralizada en `app.py` y respeta la base `/api/v1` definida en el contrato. Cuando el Gateway esté disponible, estos endpoints pueden convertirse en proxy o reemplazarse por llamadas al backend real.

@@ -8,3 +8,8 @@ def index():
     return render_template('index.html')
 
 
+@web_bp.get('/health')
+def health():
+    return {'status': 'ok', 'service': 'bookshare-frontend', 'mode': 'memory'}
+
+

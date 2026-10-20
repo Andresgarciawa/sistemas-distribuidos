@@ -1,32 +1,18 @@
-"""Cliente del API Gateway.
-
-Por ahora devuelve datos de demostración. Cuando exista el Gateway, este es el
-único módulo que debe cambiarse para usar requests/httpx y Authorization Bearer.
-"""
 from datetime import date
-from bookshare.models import Book
-
+from bookshare.services.memory_store import store
 
 class ApiClient:
-    def __init__(self, base_url: str, use_mocks: bool = True):
-        self.base_url = base_url.rstrip('/')
-        self.use_mocks = use_mocks
-        self._books = [
-            Book(87, 'Sistemas Distribuidos', 'A. Tanenbaum', True, 'Ingeniería'),
-            Book(88, 'Clean Code', 'Robert C. Martin', True, 'Programación'),
-            Book(89, 'El principito', 'Antoine de Saint-Exupéry', False, 'Literatura'),
-            Book(90, 'Inteligencia emocional', 'Daniel Goleman', True, 'Humanidades'),
-        ]
-
+    """Capa reemplazable por un cliente HTTP cuando exista el API Gateway."""
+    def __init__(self, base_url='', use_mocks=True): self.base_url, self.use_mocks = base_url, use_mocks
+    def login(self, email, password):
+        user = next((u for u in store.users.values() if u['correo'] == email), None)
+        return {**(user or {'usuario_id': 25, 'nombre': 'Ana García', 'correo': email}), 'token': 'mock-token'}
     def search_books(self, title='', category=''):
-        query = f'{title} {category}'.strip().lower()
-        return [b.to_dict() for b in self._books if not query or query in f'{b.titulo} {b.autor} {b.categoria}'.lower()]
-
-    def book_detail(self, book_id):
-        return next((b.to_dict() for b in self._books if b.libro_id == book_id), None)
-
+        q = f'{title} {category}'.strip().lower()
+        return [b for b in store.books if not q or q in f"{b['titulo']} {b['autor']} {b['categoria']}".lower()]
+    def book_detail(self, book_id): return store.book(book_id)
     def create_request(self, user_id, book_id):
-        return {'solicitud_id': 340, 'usuario_id': user_id, 'libro_id': book_id, 'estado': 'pendiente', 'fecha_solicitud': str(date.today())}
-
-    def health(self):
-        return {'status': 'ok', 'mode': 'mock' if self.use_mocks else 'gateway'}
+        if not store.book(book_id): return None
+        row = {'solicitud_id': store.next_id('request'), 'usuario_id': user_id, 'libro_id': book_id, 'estado': 'pendiente', 'fecha_solicitud': str(date.today())}
+        store.requests.append(row); return row
+    def health(self): return {'status': 'ok', 'mode': 'memory' if self.use_mocks else 'gateway'}
